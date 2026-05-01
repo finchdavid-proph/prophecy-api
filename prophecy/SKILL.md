@@ -1,8 +1,6 @@
 ---
-name: apex-prophecy
+name: prophecy
 description: Trigger and monitor Prophecy pipelines, deploy Prophecy projects, run Prophecy data tests, and manage Prophecy fabrics, connections, and secrets via the Prophecy REST API. Use this skill whenever the user asks to "trigger a Prophecy pipeline", "kick off a Prophecy run", "run a pipeline in Prophecy", "deploy a Prophecy project", "check Prophecy run status", "wait for a Prophecy pipeline to finish", "run Prophecy data tests", "create / update / delete a Prophecy fabric", "add a connection to a Prophecy fabric", "list Prophecy connections", "create / rotate / delete a Prophecy secret", or anything that calls the Prophecy API at app.prophecy.io or a Dedicated SaaS Prophecy host. Trigger even when the user does not say "API" — phrases like "start the bakehouse pipeline", "deploy CustomerAnalytics 2.1 to production-databricks", "is run abc-123 done yet", "spin up a new fabric for staging", "wire a Snowflake connection into fabric 5", "rotate the databricks PAT secret", or "block until the nightly job finishes" all warrant this skill.
-skill-type: specialist
-category: Integration
 ---
 
 # Prophecy REST API

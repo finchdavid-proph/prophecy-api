@@ -1,7 +1,7 @@
-"""Prophecy REST API client (single-file copy for the apex-prophecy skill).
+"""Prophecy REST API client (single-file bundle for the Claude Code skill).
 
-Mirrors the public ``prophecy-api`` package. Keep this file in sync with that
-project's ``src/prophecy_api/`` modules.
+Mirrors the ``prophecy-api`` package. Keep this file in sync with the
+top-level ``src/prophecy_api/`` modules.
 
 Resource-namespaced usage:
 
