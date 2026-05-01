@@ -1,6 +1,6 @@
 # Prophecy REST API — endpoint reference
 
-Verified set of all 18 endpoints used by the `apex-prophecy` skill. Paths and methods come from the per-page OpenAPI specs at `https://docs.prophecy.ai/api-reference/...`.
+Verified set of all 18 endpoints used by the `prophecy` skill. Paths and methods come from the per-page OpenAPI specs at `https://docs.prophecy.ai/api-reference/...`.
 
 > **Important:** the index at `https://docs.prophecy.ai/llms.txt` lists wrong paths (e.g. `/api/pipelines/trigger`, `/api/fabrics/{id}`). The OpenAPI specs and this reference are authoritative.
 
