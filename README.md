@@ -273,6 +273,10 @@ ruff check .
 
 Tests use [`responses`](https://github.com/getsentry/responses) to mock HTTP — no real Prophecy account required.
 
+## Claude Code skill
+
+A self-contained Claude Code skill that wraps this client lives in [claude-skill/](claude-skill/). Drop the folder into your `.claude/skills/` directory (renamed `apex-prophecy` or whatever you prefer) and Claude will trigger it on phrases like "trigger a Prophecy pipeline", "deploy CustomerAnalytics 2.1", or "rotate the databricks PAT secret". The skill bundles its own copy of the client so it works without `pip install prophecy-api`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
