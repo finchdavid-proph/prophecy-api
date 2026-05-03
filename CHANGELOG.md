@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- `docs/METHODS.md` — full reference table for all 19 client methods (18 endpoints + 1 polling helper) with status, endpoint path, and purpose. Linked from the README.
+- `prophecy identify <resource>.<method> [--arg KEY=VALUE ...]` CLI subcommand — live-probes a method against the configured instance and classifies the outcome (WORKS / BROKEN / UNVERIFIED). Useful for verifying Dedicated SaaS endpoints, sanity-checking new tokens, or scoping endpoints not yet documented. Arg values are coerced via `int → JSON → str`.
+- 8 unit tests for the `identify` subcommand covering WORKS / API-error BROKEN / HTTP-error BROKEN / UNVERIFIED and bad-input rejection paths.
+
 ## [0.1.0] - 2026-05-01
 
 ### Added

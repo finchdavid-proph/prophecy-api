@@ -15,7 +15,7 @@ with ProphecyClient.from_env() as client:
 
 ## Features
 
-- **All 18 endpoints** — pipelines, projects, fabrics, connections, secrets.
+- **All 18 endpoints** — pipelines, projects, fabrics, connections, secrets. Full method-level reference in [docs/METHODS.md](docs/METHODS.md).
 - **Resource-namespaced API** — `client.pipelines.trigger()`, `client.fabrics.create()`, ... Mirrors the OpenAPI doc structure.
 - **Single shared session** — one `requests.Session` with auth headers, used by every resource.
 - **Automatic retry** for transient errors (5xx, 429) on idempotent verbs, with exponential backoff. Configurable per-client.
@@ -211,9 +211,23 @@ prophecy connection delete 1 bq1
 prophecy secret create --fabric-id 1 --sub-kind text --properties pat.json
 prophecy secret list 1
 prophecy secret delete 1 4657
+
+prophecy identify pipelines.get_run_status --arg run_id=abc-123
+prophecy identify fabrics.get --arg fabric_id=4251
+prophecy identify connections.list --arg fabric_id=1
 ```
 
 `--properties` for connections/secrets is a path to a JSON file with the connector- or secret-type-specific body. See the [Prophecy connector docs](https://docs.prophecy.ai/api-reference/connections/properties) for shapes.
+
+### `identify` — live-probe a method
+
+`prophecy identify <resource>.<method> [--arg KEY=VALUE ...]` calls the named method on the configured instance and classifies the outcome as **WORKS / BROKEN / UNVERIFIED**. Useful for:
+
+- verifying a Dedicated SaaS endpoint matches the public OpenAPI spec,
+- sanity-checking auth on a new token,
+- scoping an endpoint that isn't yet documented.
+
+Values are coerced via `int → JSON → str`, so `--arg fabric_id=1` sends an integer, `--arg parameters='{"k":"v"}'` sends a dict, and `--arg name=foo` stays a string.
 
 The `scripts/` directory contains the most common pipeline operations as standalone Python files (no install required if `requests` is on `PYTHONPATH`):
 

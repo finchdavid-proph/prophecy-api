@@ -7,6 +7,7 @@ Layout:
   prophecy fabric      create | get | update | delete
   prophecy connection  create | list | get | update | delete
   prophecy secret      create | list | get | update | delete
+  prophecy identify    live-probe a method, classify outcome
 """
 
 from __future__ import annotations
@@ -17,7 +18,11 @@ import sys
 from typing import Any
 
 from prophecy_api.client import ProphecyClient
-from prophecy_api.exceptions import ProphecyError
+from prophecy_api.exceptions import (
+    ProphecyAPIError,
+    ProphecyError,
+    ProphecyHTTPError,
+)
 
 # --- helpers -----------------------------------------------------------------
 
@@ -241,6 +246,101 @@ def _cmd_secret_delete(args: argparse.Namespace) -> None:
         _emit(c.secrets.delete(args.fabric_id, args.secret_id))
 
 
+# --- identify (live-probe a method against the configured instance) ---------
+
+
+def _resolve_method(client: ProphecyClient, dotted: str):
+    """Resolve a ``resource.method`` path on the client. Raises
+    ``SystemExit`` with a clear message if either part is wrong."""
+    if "." not in dotted:
+        raise SystemExit(
+            f"identify: METHOD must be 'resource.method', got {dotted!r}. "
+            f"Available resources: pipelines, projects, fabrics, connections, secrets."
+        )
+    resource_name, _, method_name = dotted.partition(".")
+    resource = getattr(client, resource_name, None)
+    if resource is None:
+        raise SystemExit(
+            f"identify: no resource {resource_name!r} on the client. "
+            f"Available: pipelines, projects, fabrics, connections, secrets."
+        )
+    method = getattr(resource, method_name, None)
+    if method is None or not callable(method):
+        public = sorted(
+            n for n in dir(resource)
+            if not n.startswith("_") and callable(getattr(resource, n))
+        )
+        raise SystemExit(
+            f"identify: {resource_name} has no callable method {method_name!r}. "
+            f"Available: {', '.join(public)}"
+        )
+    return method
+
+
+def _coerce_arg(raw: str) -> Any:
+    """Best-effort coercion: try int, then JSON, then fall back to string."""
+    try:
+        return int(raw)
+    except ValueError:
+        pass
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return raw
+
+
+def _cmd_identify(args: argparse.Namespace) -> None:
+    """Live-probe a method against the configured instance and classify
+    the outcome (WORKS / BROKEN / UNVERIFIED).
+
+    Useful for verifying a Dedicated SaaS endpoint matches the public
+    OpenAPI spec, sanity-checking auth on a new token, or scoping a
+    new endpoint that isn't yet documented.
+    """
+    kwargs: dict[str, Any] = {}
+    for item in args.arg or []:
+        if "=" not in item:
+            raise SystemExit(f"--arg expects KEY=VALUE, got: {item!r}")
+        key, _, value = item.partition("=")
+        kwargs[key] = _coerce_arg(value)
+
+    client = _build_client(args)
+    try:
+        with client:
+            method = _resolve_method(client, args.method)
+            print(f"calling client.{args.method}(**{kwargs}) on {client.base_url}")
+            try:
+                result = method(**kwargs)
+            except ProphecyAPIError as e:
+                print(f"→ Status: BROKEN — server returned success=false: {e}")
+                if e.response_body:
+                    print(f"  body: {json.dumps(e.response_body, default=str)[:300]}")
+                return
+            except ProphecyHTTPError as e:
+                print(f"→ Status: BROKEN — HTTP {e.status_code}: {e}")
+                if e.response_body:
+                    body_str = (
+                        json.dumps(e.response_body, default=str)
+                        if isinstance(e.response_body, dict)
+                        else str(e.response_body)
+                    )
+                    print(f"  body: {body_str[:300]}")
+                return
+            except TypeError as e:
+                print(f"→ Status: UNVERIFIED — bad args (TypeError): {e}")
+                return
+            except Exception as e:  # noqa: BLE001
+                print(f"→ Status: UNVERIFIED — {type(e).__name__}: {e}")
+                return
+
+            print("→ Status: WORKS")
+            preview = json.dumps(result, default=str)
+            print(f"  preview: {preview[:300]}")
+    except ProphecyError as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(2)
+
+
 # --- parser builder ----------------------------------------------------------
 
 
@@ -429,6 +529,37 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("fabric_id")
     p.add_argument("secret_id")
     p.set_defaults(func=_cmd_secret_delete)
+
+    # identify (live-probe a method)
+    identify = top.add_parser(
+        "identify",
+        help="live-probe a method on the configured instance and classify the outcome",
+        description=(
+            "Call a resource.method on the configured instance with the "
+            "given args and classify the outcome (WORKS / BROKEN / "
+            "UNVERIFIED). Useful for verifying a Dedicated SaaS endpoint "
+            "matches the public OpenAPI spec, sanity-checking auth on a "
+            "new token, or scoping an endpoint that isn't yet documented."
+        ),
+    )
+    _add_global_flags(identify)
+    identify.add_argument(
+        "method",
+        help=(
+            "resource.method, e.g. 'pipelines.get_run_status', "
+            "'fabrics.get', 'connections.list'"
+        ),
+    )
+    identify.add_argument(
+        "--arg",
+        action="append",
+        metavar="KEY=VALUE",
+        help=(
+            "keyword argument; values are coerced via int → JSON → str. "
+            "Repeat for multiple."
+        ),
+    )
+    identify.set_defaults(func=_cmd_identify)
 
     return parser
 
